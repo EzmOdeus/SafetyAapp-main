@@ -26,8 +26,9 @@ const APP_CONFIG = {
 const AppContent: React.FC = () => {
   const { user } = useKindeAuth();
   const [activeTab, setActiveTab] = useState('home');
-
-
+if(!user){
+  return <LoginPage/>
+}
 
   const renderPage = () => {
     switch (activeTab) {

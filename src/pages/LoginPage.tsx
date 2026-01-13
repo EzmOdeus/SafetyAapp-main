@@ -1,42 +1,58 @@
 import React, { useState } from 'react';
-import { Shield, Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import logo from '../assets/logo.png'; 
+import logo from '../assets/logo.png';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+
 interface LoginPageProps {
   onLogin: () => void;
   onRegister: () => void;
 }
 
-const LoginPage: React.FC = ({ onLogin, onRegister }) => {
-  const [email, setEmail] = useState('demo@safety.com');
-  const [password, setPassword] = useState('demo123');
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onRegister }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
-  // const { login } = useKindeAuth();
   const { isDark } = useTheme();
+  const { login } = useKindeAuth();
 
-
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // دالة تسجيل الدخول مع Google
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
-    setError('');
-
     try {
-      const success = await login(email, password);
-      if (!success) {
-        setError('Invalid credentials. Please try again.');
-      }
-    } catch (err) {
-      setError('Login failed. Please try again.');
+      await login({
+        connectionId: "conn_6a95dec504d34dc286dc80e8df9f6099",
+      });
+    } catch (error) {
+      console.error('Google login error:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-const { login, register } = useKindeAuth();
+  // دالة تسجيل الدخول العادي
+  const handleLogin = async () => {
+    setIsLoading(true);
+    try {
+      await onLogin();
+    } catch (error) {
+      console.error('Login error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // دالة التسجيل
+  const handleRegister = async () => {
+    setIsLoading(true);
+    try {
+      await onRegister();
+    } catch (error) {
+      console.error('Register error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div
       className={`min-h-screen ${
@@ -72,81 +88,10 @@ const { login, register } = useKindeAuth();
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label
-              htmlFor="email"
-              className={`block text-sm font-medium ${
-                isDark ? "text-gray-300" : "text-gray-700"
-              } mb-2`}
-            >
-              Email Address
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={`w-full px-4 py-3 rounded-lg border ${
-                isDark
-                  ? "bg-gray-700 border-gray-600 text-white focus:border-purple-500"
-                  : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-              } focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-colors`}
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className={`block text-sm font-medium ${
-                isDark ? "text-gray-300" : "text-gray-700"
-              } mb-2`}
-            >
-              Password
-            </label>
-            <div className="relative">
-              <input
-                id="password"
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  isDark
-                    ? "bg-gray-700 border-gray-600 text-white focus:border-purple-500"
-                    : "bg-white border-gray-300 text-gray-900 focus:border-purple-500"
-                } focus:outline-none focus:ring-2 focus:ring-purple-500/20 transition-colors pr-12`}
-                placeholder="Enter your password"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${
-                  isDark
-                    ? "text-gray-400 hover:text-gray-300"
-                    : "text-gray-500 hover:text-gray-700"
-                } transition-colors`}
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5" />
-                ) : (
-                  <Eye className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </div>
-
-          {error && (
-            <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
-
+        <div className="space-y-4">
+          {/* زر تسجيل الدخول العادي */}
           <button
-            type="submit"
-            onClick={() => onLogin()}
+            onClick={handleLogin}
             disabled={isLoading}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
               isLoading
@@ -154,39 +99,39 @@ const { login, register } = useKindeAuth();
                 : "bg-gradient-to-r from-pink-500 via-purple-600 to-indigo-600 hover:from-pink-600 hover:via-purple-700 hover:to-indigo-700 hover:scale-105 active:scale-98"
             } text-white shadow-lg hover:shadow-xl`}
           >
-            {isLoading ? "Signing In..." : "Sign In"}
+            {isLoading ? "Signing In..." : "Sign In with Email"}
           </button>
+
+          {/* زر إنشاء حساب جديد */}
           <button
-            onClick={() => onRegister()}
-            // disabled={isLoading}
+            onClick={handleRegister}
+            disabled={isLoading}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
               isLoading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-green-600  from-via-purple-600 to-green-600 hover:from-pink-600 hover:via-purple-700 hover:to-indigo-700 hover:scale-105 active:scale-98"
+                : "bg-green-600 hover:bg-green-700 hover:scale-105 active:scale-98"
             } text-white shadow-lg hover:shadow-xl`}
           >
-            {isLoading ? "Signing Up..." : "Sign Up"}
+            {isLoading ? "Creating Account..." : "Create New Account"}
           </button>
+
+          {/* خط فاصل */}
+          <div className="relative my-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className={`w-full border-t ${isDark ? 'border-gray-700' : 'border-gray-300'}`}></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className={`px-2 ${isDark ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
+                Or continue with
+              </span>
+            </div>
+          </div>
+
+          {/* زر تسجيل الدخول مع Google */}
           <button
-            onClick={() =>
-              login({
-                connectionId: "conn_6a95dec504d34dc286dc80e8df9f6099",
-              })
-            }
-            className="
-    flex items-center justify-center gap-3
-    w-full max-w-sm
-    rounded-lg border border-gray-300
-    bg-white px-5 py-3
-    text-sm font-medium text-gray-700
-    shadow-sm
-    transition
-    hover:bg-gray-50
-    hover:shadow-md
-    active:scale-[0.98]
-    focus:outline-none
-    focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-  "
+            onClick={handleGoogleLogin}
+            disabled={isLoading}
+            className="flex items-center justify-center gap-3 w-full py-3 px-4 rounded-lg border border-gray-300 bg-white text-gray-700 font-medium shadow-sm hover:bg-gray-50 hover:shadow-md active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {/* Google Icon */}
             <svg className="h-5 w-5" viewBox="0 0 48 48">
@@ -207,10 +152,14 @@ const { login, register } = useKindeAuth();
                 d="M24 48c6.4 0 11.9-2.12 15.86-5.78l-7.73-6c-2.14 1.44-4.88 2.3-8.13 2.3-6.3 0-11.7-3.66-13.46-8.92l-7.98 6.2C6.51 42.62 14.62 48 24 48z"
               />
             </svg>
-
             <span>Sign in with Google</span>
           </button>
-        </form>
+        </div>
+
+        {/* معلومات إضافية */}
+        <div className={`mt-6 text-center text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <p>By continuing, you agree to our Terms of Service and Privacy Policy</p>
+        </div>
       </div>
     </div>
   );

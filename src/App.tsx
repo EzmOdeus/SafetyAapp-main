@@ -40,7 +40,7 @@ const AppContent: React.FC = () => {
   // إذا لم يكن المستخدم مسجل الدخول، عرض صفحة التسجيل
   if (!isAuthenticated || !user) {
     return <LoginPage onLogin={login} onRegister={register} />;
-  }
+  } else{  return <HomePage />}
 
   const renderPage = () => {
     switch (activeTab) {

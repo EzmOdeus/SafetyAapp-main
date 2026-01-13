@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import LoginPage from './pages/LoginPage';
@@ -22,11 +22,48 @@ const APP_CONFIG = {
 };
 
 const AppContent: React.FC = () => {
-  const { isAuthenticated, isLoading, user, login, register } = useKindeAuth();
+  const { isAuthenticated, isLoading, user, getToken } = useKindeAuth();
   const [activeTab, setActiveTab] = useState('home');
+  const [authChecked, setAuthChecked] = useState(false);
 
-  // عرض loading أثناء التحميل
-  if (isLoading) {
+  // Debugging effect
+  useEffect(() => {
+    console.log('Auth State:', {
+      isAuthenticated,
+      isLoading,
+      user,
+      location: window.location.href
+    });
+  }, [isAuthenticated, isLoading, user]);
+
+  // Effect لفحص التوكن
+  useEffect(() => {
+    const checkToken = async () => {
+      if (!isLoading) {
+        try {
+          const token = await getToken();
+          console.log('Token exists:', !!token);
+          
+          // إذا كان هناك توكن ولكن isAuthenticated غير صحيح
+          if (token && !isAuthenticated) {
+            console.log('Token found but user not authenticated - reloading');
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }
+        } catch (error) {
+          console.error('Token check error:', error);
+        } finally {
+          setAuthChecked(true);
+        }
+      }
+    };
+
+    checkToken();
+  }, [isLoading, isAuthenticated, getToken]);
+
+  // عرض loading
+  if (isLoading || !authChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -37,11 +74,13 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // إذا لم يكن المستخدم مسجل الدخول، عرض صفحة التسجيل
+  // إذا لم يكن المستخدم مسجل الدخول
   if (!isAuthenticated || !user) {
+    const { login, register } = useKindeAuth();
     return <LoginPage onLogin={login} onRegister={register} />;
-  } else{  return <HomePage />}
+  }
 
+  // إذا كان المستخدم مسجل الدخول - عرض التطبيق الرئيسي
   const renderPage = () => {
     switch (activeTab) {
       case 'home':

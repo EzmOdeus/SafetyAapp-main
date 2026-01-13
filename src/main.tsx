@@ -9,8 +9,8 @@ createRoot(document.getElementById('root')!).render(
     <KindeProvider
 		clientId="e25d85e213ee4fb4bba5d60a08cb0e62"
 		domain="https://safetyapp.kinde.com"
-		redirectUri="http://localhost:5173"
-		logoutUri="http://localhost:5173"
+		redirectUri="https://safety-aapp-main.vercel.app/"
+		logoutUri="https://safety-aapp-main.vercel.app/"
 	>
 
     <App />

@@ -3,7 +3,12 @@ import { Shield, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import logo from '../assets/logo.png'; 
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
-const LoginPage: React.FC = () => {
+interface LoginPageProps {
+  onLogin: () => void;
+  onRegister: () => void;
+}
+
+const LoginPage: React.FC = ({ onLogin, onRegister }) => {
   const [email, setEmail] = useState('demo@safety.com');
   const [password, setPassword] = useState('demo123');
   const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +16,8 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   // const { login } = useKindeAuth();
   const { isDark } = useTheme();
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +146,7 @@ const { login, register } = useKindeAuth();
 
           <button
             type="submit"
+            onClick={() => onLogin()}
             disabled={isLoading}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
               isLoading
@@ -149,7 +157,7 @@ const { login, register } = useKindeAuth();
             {isLoading ? "Signing In..." : "Sign In"}
           </button>
           <button
-            onClick={() => register()}
+            onClick={() => onRegister()}
             // disabled={isLoading}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
               isLoading

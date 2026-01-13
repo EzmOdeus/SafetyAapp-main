@@ -56,6 +56,7 @@ const AppContent: React.FC = () => {
     <div className="min-h-screen flex flex-col">
       <Header title={getPageTitle()} />
       <main className="flex-1 pt-16 pb-20">
+        {"----->",user}
         {renderPage()}
       </main>
       <BottomNavigation activeTab={activeTab} onTabChange={setActiveTab} />

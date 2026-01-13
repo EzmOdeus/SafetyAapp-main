@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+t, Upload, Palette, Save, X } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { usimport React, { useState, useEffect } from 'react';
 import { User, Edit, Camera, Phone, Mail, MapPin, Shield, LogOut, Upload, Palette, Save, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
@@ -22,38 +24,8 @@ const ProfilePage: React.FC = () => {
   const [selectedAvatar, setSelectedAvatar] = useState('');
   const [selectedThemeColor, setSelectedThemeColor] = useState('purple');
 
-  // حفظ البيانات المحلية (في حالة عدم وجود API)
-  const handleSave = () => {
-    // هنا يمكنك إضافة كود لحفظ البيانات في قاعدة بياناتك
-    // لكن Kinde لا يوفر updateProfile مباشرة
-    console.log('Saving user data:', localUserData);
-    
-    // يمكنك استخدام localStorage لتخزين البيانات مؤقتاً
-    localStorage.setItem('user_profile_data', JSON.stringify({
-      ...localUserData,
-      profileImage: selectedAvatar,
-      themeColor: selectedThemeColor
-    }));
-    
-    setIsEditing(false);
-    setShowImageUpload(false);
-  };
-
-  const handleCancel = () => {
-    // استعادة البيانات الأصلية من Kinde
-    setLocalUserData({
-      name: user?.given_name ? `${user.given_name} ${user.family_name || ''}`.trim() : 'User',
-      email: user?.email || '',
-      phone: user?.phone_number || '',
-      bio: '',
-      location: ''
-    });
-    setIsEditing(false);
-    setShowImageUpload(false);
-  };
-
   // تحميل البيانات المحلية المخزنة
-  React.useEffect(() => {
+  useEffect(() => {
     const savedData = localStorage.getItem('user_profile_data');
     if (savedData) {
       try {
@@ -70,6 +42,52 @@ const ProfilePage: React.FC = () => {
       }
     }
   }, []);
+
+  // حفظ البيانات المحلية
+  const handleSave = () => {
+    // حفظ في localStorage
+    localStorage.setItem('user_profile_data', JSON.stringify({
+      ...localUserData,
+      profileImage: selectedAvatar,
+      themeColor: selectedThemeColor
+    }));
+    
+    setIsEditing(false);
+    setShowImageUpload(false);
+  };
+
+  const handleCancel = () => {
+    // استعادة البيانات الأصلية
+    const savedData = localStorage.getItem('user_profile_data');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        setLocalUserData(prev => ({
+          ...prev,
+          bio: parsedData.bio || '',
+          location: parsedData.location || ''
+        }));
+        setSelectedAvatar(parsedData.profileImage || '');
+        setSelectedThemeColor(parsedData.themeColor || 'purple');
+      } catch (error) {
+        console.error('Error restoring data:', error);
+      }
+    } else {
+      // إذا لم توجد بيانات محفوظة، استخدم بيانات Kinde
+      setLocalUserData({
+        name: user?.given_name ? `${user.given_name} ${user.family_name || ''}`.trim() : 'User',
+        email: user?.email || '',
+        phone: user?.phone_number || '',
+        bio: '',
+        location: ''
+      });
+      setSelectedAvatar('');
+      setSelectedThemeColor('purple');
+    }
+    
+    setIsEditing(false);
+    setShowImageUpload(false);
+  };
 
   const avatarOptions = [
     '🔥', '🤖', '𓅅', '༒', '☤', '☸', '☾', '⚚',
@@ -90,7 +108,6 @@ const ProfilePage: React.FC = () => {
     return theme ? theme.gradient : 'from-purple-500 to-pink-500';
   };
 
-  // الحصول على الاسم من Kinde
   const getUserDisplayName = () => {
     if (user?.given_name && user?.family_name) {
       return `${user.given_name} ${user.family_name}`;
@@ -104,7 +121,6 @@ const ProfilePage: React.FC = () => {
     return 'User';
   };
 
-  // الحصول على الأحرف الأولى للصورة الافتراضية
   const getInitials = () => {
     const name = getUserDisplayName();
     return name
@@ -121,12 +137,9 @@ const ProfilePage: React.FC = () => {
     { label: 'Account Type', value: 'Free', icon: User }
   ];
 
-  // دالة تسجيل الخروج
   const handleLogout = async () => {
     try {
       await logout();
-      // تنظيف البيانات المحلية
-      localStorage.removeItem('user_profile_data');
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -135,6 +148,7 @@ const ProfilePage: React.FC = () => {
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'} pb-20`}>
       <div className="p-4">
+        {/* Card الرئيسي */}
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 mb-6 shadow-lg`}>
           <div className="flex items-center justify-between mb-6">
             <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -150,6 +164,7 @@ const ProfilePage: React.FC = () => {
             </button>
           </div>
 
+          {/* صورة الملف الشخصي */}
           <div className="flex items-center space-x-4 mb-6">
             <div className="relative">
               <div className={`w-20 h-20 bg-gradient-to-br ${getThemeGradient(selectedThemeColor)} rounded-full flex items-center justify-center shadow-lg`}>
@@ -200,8 +215,9 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
 
+          {/* معلومات المستخدم */}
           <div className="space-y-4">
-            {/* Email (مأخوذ من Kinde ولا يمكن تعديله) */}
+            {/* Email */}
             <div className="flex items-center space-x-3">
               <Mail className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex-1">
@@ -212,7 +228,7 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Bio (مخزن محلياً) */}
+            {/* Bio */}
             <div className="flex items-center space-x-3">
               <User className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex-1">
@@ -235,7 +251,7 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Location (مخزن محلياً) */}
+            {/* Location */}
             <div className="flex items-center space-x-3">
               <MapPin className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex-1">
@@ -258,7 +274,7 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Phone Number (مأخوذ من Kinde إن وجد) */}
+            {/* Phone */}
             <div className="flex items-center space-x-3">
               <Phone className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex-1">
@@ -280,7 +296,7 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Theme Color (مخزن محلياً) */}
+            {/* Theme Color - يظهر فقط في وضع التعديل */}
             {isEditing && (
               <div className="space-y-3 mt-4">
                 <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Theme Color</span>
@@ -328,7 +344,7 @@ const ProfilePage: React.FC = () => {
           )}
         </div>
 
-        {/* إحصائيات الحساب */}
+        {/* قسم إحصائيات الحساب */}
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 mb-6 shadow-lg`}>
           <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-4`}>
             Account Statistics
@@ -350,7 +366,7 @@ const ProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* الأمان والخصوصية */}
+        {/* معلومات الحساب */}
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 mb-6 shadow-lg`}>
           <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-4`}>
             Account Information
@@ -458,161 +474,17 @@ const ProfilePage: React.FC = () => {
   );
 };
 
-export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 mb-6 shadow-lg`}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Profile
-            </h2>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className={`p-2 rounded-lg transition-colors ${
-                isDark ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-              }`}
-            >
-              <Edit className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-4 mb-6">
-            <div className="relative">
-              <div className={`w-20 h-20 bg-gradient-to-br ${getThemeGradient(selectedThemeColor)} rounded-full flex items-center justify-center shadow-lg`}>
-                {selectedAvatar ? (
-                  <span className="text-3xl">
-                    {selectedAvatar}
-                  </span>
-                ) : (
-                  <span className="text-white font-semibold text-2xl">
-                    {user?.name?.charAt(0) || 'U'}
-                  </span>
-                )}
-              </div>
-              <button 
-                onClick={() => setShowImageUpload(true)}
-                className={`absolute bottom-0 right-0 w-6 h-6 bg-gradient-to-br ${getThemeGradient(selectedThemeColor)} rounded-full flex items-center justify-center shadow-md hover:scale-110 transition-transform`}
-              >
-                <Camera className="w-3 h-3 text-white" />
-              </button>
-            </div>
-            
-            <div className="flex-1">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className={`w-full p-2 rounded-lg border ${
-                    isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                  } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
-                />
-              ) : (
-                <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {user?.name || 'User'}
-                </h3>
-              )}
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Premium Member
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <Mail className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-              <div className="flex-1">
-                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Email</span>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className={`w-full p-2 rounded-lg border ${
-                      isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                    } focus:outline-none focus:ring-2 focus:ring-purple-500/20 mt-1`}
+export default ProfilePage;         } focus:outline-none focus:ring-2 focus:ring-purple-500/20 mt-1`}
                   />
                 ) : (
-                  <p className={`${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {user?.email || 'Not provided'}
+                  <p className={`${isDark ? 'text-white' : 'text-gray-900'} mt-1`}>
+                    {localUserData.location || 'Location not set'}
                   </p>
                 )}
               </div>
             </div>
 
-            {isEditing && (
-              <div className="space-y-4 mt-4">
-                <div className="flex items-center space-x-3">
-                  <User className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-                  <div className="flex-1">
-                    <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Bio</span>
-                    <textarea
-                      value={formData.bio}
-                      onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                      placeholder="Tell us about yourself..."
-                      className={`w-full p-2 rounded-lg border ${
-                        isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                      } focus:outline-none focus:ring-2 focus:ring-purple-500/20 mt-1 resize-none`}
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <MapPin className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-                  <div className="flex-1">
-                    <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Location</span>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="Your city, country"
-                      className={`w-full p-2 rounded-lg border ${
-                        isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
-                      } focus:outline-none focus:ring-2 focus:ring-purple-500/20 mt-1`}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Theme Color</span>
-                  <div className="grid grid-cols-3 gap-3">
-                    {themeColors.map((color) => (
-                      <button
-                        key={color.value}
-                        onClick={() => setSelectedThemeColor(color.value)}
-                        className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-all ${
-                          selectedThemeColor === color.value
-                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                            : isDark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${color.gradient}`}></div>
-                        <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                          {color.name}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {!isEditing && user?.bio && (
-              <div className="mt-4">
-                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Bio</span>
-                <p className={`${isDark ? 'text-white' : 'text-gray-900'} mt-1`}>
-                  {user.bio}
-                </p>
-              </div>
-            )}
-
-            {!isEditing && user?.location && (
-              <div className="mt-3 flex items-center space-x-2">
-                <MapPin className={`w-4 h-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
-                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {user.location}
-                </span>
-              </div>
-            )}
-
+            {/* Phone */}
             <div className="flex items-center space-x-3">
               <Phone className={`w-5 h-5 ${isDark ? 'text-gray-400' : 'text-gray-600'}`} />
               <div className="flex-1">
@@ -620,21 +492,47 @@ export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : '
                 {isEditing ? (
                   <input
                     type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    value={localUserData.phone}
+                    onChange={(e) => setLocalUserData({ ...localUserData, phone: e.target.value })}
                     className={`w-full p-2 rounded-lg border ${
                       isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'
                     } focus:outline-none focus:ring-2 focus:ring-purple-500/20 mt-1`}
                   />
                 ) : (
                   <p className={`${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {user?.phone || 'Not provided'}
+                    {user?.phone_number || localUserData.phone || 'Not provided'}
                   </p>
                 )}
               </div>
             </div>
+
+            {/* Theme Color - يظهر فقط في وضع التعديل */}
+            {isEditing && (
+              <div className="space-y-3 mt-4">
+                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Theme Color</span>
+                <div className="grid grid-cols-3 gap-3">
+                  {themeColors.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => setSelectedThemeColor(color.value)}
+                      className={`flex items-center space-x-2 p-3 rounded-lg border-2 transition-all ${
+                        selectedThemeColor === color.value
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
+                          : isDark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-gradient-to-br ${color.gradient}`}></div>
+                      <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {color.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
+          {/* أزرار الحفظ والإلغاء */}
           {isEditing && (
             <div className="flex space-x-3 mt-6">
               <button
@@ -647,15 +545,16 @@ export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : '
               </button>
               <button
                 onClick={handleSave}
-                className={`flex-1 py-2 bg-gradient-to-r ${getThemeGradient(selectedThemeColor)} hover:scale-105 text-white rounded-lg transition-all duration-300 shadow-lg`}
+                className={`flex-1 py-2 bg-gradient-to-r ${getThemeGradient(selectedThemeColor)} hover:scale-105 text-white rounded-lg transition-all duration-300 shadow-lg flex items-center justify-center`}
               >
-                <Save className="w-4 h-4 inline mr-2" />
+                <Save className="w-4 h-4 mr-2" />
                 Save Changes
               </button>
             </div>
           )}
         </div>
 
+        {/* قسم إحصائيات الحساب */}
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 mb-6 shadow-lg`}>
           <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-4`}>
             Account Statistics
@@ -677,42 +576,50 @@ export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : '
           </div>
         </div>
 
+        {/* معلومات الحساب */}
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 mb-6 shadow-lg`}>
           <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-4`}>
-            Privacy & Security
+            Account Information
           </h3>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Location Services
+                Account Created
               </span>
-              <span className="text-green-500 text-sm font-medium">Enabled</span>
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                {new Date().toLocaleDateString()}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Emergency Notifications
+                User ID
               </span>
-              <span className="text-green-500 text-sm font-medium">Enabled</span>
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'} truncate max-w-[120px]`}>
+                {user?.id?.substring(0, 8) || 'N/A'}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span className={`${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                Data Encryption
+                Authentication
               </span>
-              <span className="text-green-500 text-sm font-medium">Active</span>
+              <span className="text-green-500 text-sm font-medium">
+                {user?.email_verified ? 'Verified' : 'Not Verified'}
+              </span>
             </div>
           </div>
         </div>
 
+        {/* إجراءات الحساب */}
         <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 shadow-lg`}>
           <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'} mb-4`}>
             Account Actions
           </h3>
           <div className="space-y-3">
             <button 
-              onClick={logout}
+              onClick={handleLogout}
               className={`w-full flex items-center justify-center p-3 rounded-lg transition-colors ${
-              isDark ? 'bg-red-900/20 text-red-400 hover:bg-red-900/30' : 'bg-red-50 text-red-600 hover:bg-red-100'
-            }`}
+                isDark ? 'bg-red-900/20 text-red-400 hover:bg-red-900/30' : 'bg-red-50 text-red-600 hover:bg-red-100'
+              }`}
             >
               <LogOut className="w-5 h-5 mr-2" />
               Sign Out
@@ -721,7 +628,7 @@ export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : '
         </div>
       </div>
 
-      
+      {/* نافذة اختيار الصورة */}
       {showImageUpload && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-2xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto`}>
@@ -741,7 +648,10 @@ export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : '
               {avatarOptions.map((avatar, index) => (
                 <button
                   key={index}
-                  onClick={() => setSelectedAvatar(avatar)}
+                  onClick={() => {
+                    setSelectedAvatar(avatar);
+                    setShowImageUpload(false);
+                  }}
                   className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl transition-all duration-200 ${
                     selectedAvatar === avatar
                       ? `bg-gradient-to-br ${getThemeGradient(selectedThemeColor)} scale-110 shadow-lg`
@@ -755,30 +665,16 @@ export default ProfilePage;        <div className={`${isDark ? 'bg-gray-800' : '
 
             <div className="border-t pt-4">
               <button
-                onClick={() => setSelectedAvatar('')}
+                onClick={() => {
+                  setSelectedAvatar('');
+                  setShowImageUpload(false);
+                }}
                 className={`w-full p-3 rounded-lg border-2 border-dashed transition-colors ${
                   isDark ? 'border-gray-600 text-gray-400 hover:border-gray-500' : 'border-gray-300 text-gray-600 hover:border-gray-400'
                 }`}
               >
                 <Upload className="w-5 h-5 mx-auto mb-1" />
-                <span className="text-sm">Use Default (First Letter)</span>
-              </button>
-            </div>
-
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => setShowImageUpload(false)}
-                className={`flex-1 py-3 rounded-lg border ${
-                  isDark ? 'border-gray-600 text-gray-400 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
-                } transition-colors`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowImageUpload(false)}
-                className={`flex-1 py-3 bg-gradient-to-r ${getThemeGradient(selectedThemeColor)} hover:scale-105 text-white rounded-lg transition-all duration-300 shadow-lg`}
-              >
-                Apply Avatar
+                <span className="text-sm">Use Default Avatar</span>
               </button>
             </div>
           </div>
